@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Penjualan Harian</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fb;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .form-container {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            flex: 2;
+            min-width: 500px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .filter-section {
+            background: #eef2f7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .date-filters {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .date-filters input {
+            flex: 1;
+        }
+        .summary-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .card {
+            flex: 1;
+            min-width: 150px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .card h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #7f8c8d;
+        }
+        .card p {
+            margin: 10px 0 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .instructions {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .form-container, .chart-container {
+                min-width: 100%;
+            }
+            .date-filters {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Form Laporan Penjualan Harian</h1>
+    
+    <div class="instructions">
+        <h3>Panduan Penggunaan:</h3>
+        <ol>
+            <li>Isi data penjualan harian pada form di sebelah kiri</li>
+            <li>Klik "Simpan ke Google Sheets" untuk menyimpan data</li>
+            <li>Gunakan filter tanggal untuk melihat data dalam periode tertentu</li>
+            <li>Grafik akan otomatis diperbarui sesuai dengan periode yang dipilih</li>
+        </ol>
+        <p><strong>Catatan:</strong> Data akan disimpan langsung ke Google Sheets dan dapat diakses oleh semua karyawan.</p>
+    </div>
+    
+    <div class="container">
+        <div class="form-container">
+            <h2>Input Penjualan Harian</h2>
+            <div class="form-group">
+                <label for="tanggal">Tanggal:</label>
+                <input type="date" id="tanggal" required>
+            </div>
+            <div class="form-group">
+                <label for="karyawan">Nama Karyawan:</label>
+                <select id="karyawan" required>
+                    <option value="">Pilih Karyawan</option>
+                    <option value="Ayu">Ayu</option>
+                    <option value="Agus">Agus</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="ayam">Jumlah Ayam Terjual:</label>
+                <input type="number" id="ayam" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label for="nasi">Jumlah Nasi Terjual:</label>
+                <input type="number" id="nasi" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label for="kulit">Jumlah Kulit Terjual:</label>
+                <input type="number" id="kulit" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label for="geprek">Jumlah Geprek Terjual:</label>
+                <input type="number" id="geprek" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label for="bbq">Jumlah BBQ Terjual:</label>
+                <input type="number" id="bbq" min="0" value="0">
+            </div>
+            <button id="submit-btn">
+                <span id="submit-text">Simpan ke Google Sheets</span>
+                <span id="submit-loading" class="loading" style="display:none;"></span>
+            </button>
+        </div>
+        
+        <div class="chart-container">
+            <h2>Visualisasi Penjualan</h2>
+            
+            <div class="filter-section">
+                <label>Filter Berdasarkan Periode:</label>
+                <div class="date-filters">
+                    <div class="form-group">
+                        <label for="start-date">Dari Tanggal:</label>
+                        <input type="date" id="start-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="end-date">Sampai Tanggal:</label>
+                        <input type="date" id="end-date">
+                    </div>
+                </div>
+                <button id="filter-btn">Terapkan Filter</button>
+                <button id="monthly-btn" style="background-color: #2ecc71; margin-top: 10px;">Tampilkan Seluruh Bulan</button>
+            </div>
+            
+            <div class="summary-cards">
+                <div class="card">
+                    <h3>Total Ayam</h3>
+                    <p id="total-ayam">0</p>
+                </div>
+                <div class="card">
+                    <h3>Total Nasi</h3>
+                    <p id="total-nasi">0</p>
+                </div>
+                <div class="card">
+                    <h3>Total Kulit</h3>
+                    <p id="total-kulit">0</p>
+                </div>
+                <div class="card">
+                    <h3>Total Geprek</h3>
+                    <p id="total-geprek">0</p>
+                </div>
+                <div class="card">
+                    <h3>Total BBQ</h3>
+                    <p id="total-bbq">0</p>
+                </div>
+            </div>
+            
+            <canvas id="sales-chart"></canvas>
+            
+            <h2>Data Penjualan</h2>
+            <div id="table-container">
+                <table id="sales-table">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Karyawan</th>
+                            <th>Ayam</th>
+                            <th>Nasi</th>
+                            <th>Kulit</th>
+                            <th>Geprek</th>
+                            <th>BBQ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data akan dimasukkan di sini oleh JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // URL Google Apps Script Web App (akan diisi setelah deployment)
+        // Ganti dengan URL Web App Anda setelah deployment Google Apps Script
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbz-P2IL3jnOsEjUOsawZC3p6nDxPWr1p-pSVI518FEtRzKHe2CFe0-jrrDI_bWDMbx7aA/exec';
+        
+        // Elemen form
+        const form = {
+            tanggal: document.getElementById('tanggal'),
+            karyawan: document.getElementById('karyawan'),
+            ayam: document.getElementById('ayam'),
+            nasi: document.getElementById('nasi'),
+            kulit: document.getElementById('kulit'),
+            geprek: document.getElementById('geprek'),
+            bbq: document.getElementById('bbq'),
+            submitBtn: document.getElementById('submit-btn'),
+            submitText: document.getElementById('submit-text'),
+            submitLoading: document.getElementById('submit-loading'),
+            startDate: document.getElementById('start-date'),
+            endDate: document.getElementById('end-date'),
+            filterBtn: document.getElementById('filter-btn'),
+            monthlyBtn: document.getElementById('monthly-btn')
+        };
+        
+        // Set tanggal default untuk filter (1-31 bulan ini)
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        
+        // Pastikan last day tidak melebihi 31
+        const endDay = new Date(today.getFullYear(), today.getMonth(), Math.min(31, lastDay.getDate()));
+        
+        form.startDate.value = formatDate(firstDay);
+        form.endDate.value = formatDate(endDay);
+        
+        // Set tanggal input form ke hari ini
+        form.tanggal.value = formatDate(today);
+        
+        // Chart.js instance
+        let salesChart = null;
+        
+        // Event listener untuk tombol simpan
+        form.submitBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            if (!form.tanggal.value || !form.karyawan.value) {
+                alert('Tanggal dan Nama Karyawan harus diisi!');
+                return;
+            }
+            
+            // Tampilkan loading
+            form.submitText.style.display = 'none';
+            form.submitLoading.style.display = 'inline-block';
+            form.submitBtn.disabled = true;
+            
+            // Siapkan data untuk dikirim
+            const data = {
+                tanggal: form.tanggal.value,
+                karyawan: form.karyawan.value,
+                ayam: parseInt(form.ayam.value) || 0,
+                nasi: parseInt(form.nasi.value) || 0,
+                kulit: parseInt(form.kulit.value) || 0,
+                geprek: parseInt(form.geprek.value) || 0,
+                bbq: parseInt(form.bbq.value) || 0
+            };
+            
+            try {
+                // Kirim data ke Google Sheets melalui Google Apps Script
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                // Reset form
+                form.ayam.value = 0;
+                form.nasi.value = 0;
+                form.kulit.value = 0;
+                form.geprek.value = 0;
+                form.bbq.value = 0;
+                
+                alert('Data berhasil disimpan ke Google Sheets!');
+                
+                // Muat ulang data dari Google Sheets
+                await loadDataFromSheets();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat menyimpan data. Pastikan URL Google Apps Script sudah benar.');
+            } finally {
+                // Sembunyikan loading
+                form.submitText.style.display = 'inline-block';
+                form.submitLoading.style.display = 'none';
+                form.submitBtn.disabled = false;
+            }
+        });
+        
+        // Event listener untuk tombol filter
+        form.filterBtn.addEventListener('click', function() {
+            updateChart();
+            updateSalesTable();
+            updateSummaryCards();
+        });
+        
+        // Event listener untuk tombol seluruh bulan
+        form.monthlyBtn.addEventListener('click', function() {
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            const endDay = new Date(today.getFullYear(), today.getMonth(), Math.min(31, lastDay.getDate()));
+            
+            form.startDate.value = formatDate(firstDay);
+            form.endDate.value = formatDate(endDay);
+            
+            updateChart();
+            updateSalesTable();
+            updateSummaryCards();
+        });
+        
+        // Fungsi untuk memuat data dari Google Sheets
+        async function loadDataFromSheets() {
+            try {
+                const response = await fetch(scriptURL);
+                const data = await response.json();
+                salesData = data;
+                updateSalesTable();
+                updateChart();
+                updateSummaryCards();
+            } catch (error) {
+                console.error('Error loading data from Sheets:', error);
+                // Fallback ke localStorage jika tidak bisa mengambil data dari Sheets
+                salesData = JSON.parse(localStorage.getItem('salesData')) || [];
+            }
+        }
+        
+        // Fungsi untuk memperbarui tabel data
+        function updateSalesTable() {
+            const tableBody = document.querySelector('#sales-table tbody');
+            tableBody.innerHTML = '';
+            
+            const filteredData = filterDataByDate();
+            
+            if (filteredData.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="7" style="text-align: center;">Tidak ada data untuk periode yang dipilih</td>`;
+                tableBody.appendChild(row);
+                return;
+            }
+            
+            filteredData.forEach(data => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDisplayDate(data.tanggal)}</td>
+                    <td>${data.karyawan}</td>
+                    <td>${data.ayam}</td>
+                    <td>${data.nasi}</td>
+                    <td>${data.kulit}</td>
+                    <td>${data.geprek}</td>
+                    <td>${data.bbq}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Fungsi untuk memperbarui kartu ringkasan
+        function updateSummaryCards() {
+            const filteredData = filterDataByDate();
+            
+            const totals = {
+                ayam: 0,
+                nasi: 0,
+                kulit: 0,
+                geprek: 0,
+                bbq: 0
+            };
+            
+            filteredData.forEach(data => {
+                totals.ayam += data.ayam;
+                totals.nasi += data.nasi;
+                totals.kulit += data.kulit;
+                totals.geprek += data.geprek;
+                totals.bbq += data.bbq;
+            });
+            
+            document.getElementById('total-ayam').textContent = totals.ayam;
+            document.getElementById('total-nasi').textContent = totals.nasi;
+            document.getElementById('total-kulit').textContent = totals.kulit;
+            document.getElementById('total-geprek').textContent = totals.geprek;
+            document.getElementById('total-bbq').textContent = totals.bbq;
+        }
+        
+        // Fungsi untuk memperbarui grafik
+        function updateChart() {
+            const ctx = document.getElementById('sales-chart').getContext('2d');
+            
+            // Hancurkan chart sebelumnya jika ada
+            if (salesChart) {
+                salesChart.destroy();
+            }
+            
+            const filteredData = filterDataByDate();
+            
+            if (filteredData.length === 0) {
+                // Tampilkan pesan jika tidak ada data
+                ctx.font = "16px Arial";
+                ctx.fillStyle = "#999";
+                ctx.textAlign = "center";
+                ctx.fillText("Tidak ada data untuk ditampilkan", ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            // Kelompokkan data berdasarkan tanggal
+            const dates = [...new Set(filteredData.map(item => item.tanggal))].sort();
+            
+            // Siapkan data untuk chart
+            const datasets = [
+                {
+                    label: 'Ayam',
+                    data: dates.map(date => {
+                        return filteredData
+                            .filter(item => item.tanggal === date)
+                            .reduce((sum, item) => sum + item.ayam, 0);
+                    }),
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Nasi',
+                    data: dates.map(date => {
+                        return filteredData
+                            .filter(item => item.tanggal === date)
+                            .reduce((sum, item) => sum + item.nasi, 0);
+                    }),
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Kulit',
+                    data: dates.map(date => {
+                        return filteredData
+                            .filter(item => item.tanggal === date)
+                            .reduce((sum, item) => sum + item.kulit, 0);
+                    }),
+                    backgroundColor: 'rgba(255, 206, 86, 0.5)',
+                    borderColor: 'rgba(255, 206, 86, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Geprek',
+                    data: dates.map(date => {
+                        return filteredData
+                            .filter(item => item.tanggal === date)
+                            .reduce((sum, item) => sum + item.geprek, 0);
+                    }),
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'BBQ',
+                    data: dates.map(date => {
+                        return filteredData
+                            .filter(item => item.tanggal === date)
+                            .reduce((sum, item) => sum + item.bbq, 0);
+                    }),
+                    backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1
+                }
+            ];
+            
+            // Buat chart
+            salesChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dates.map(date => formatDisplayDate(date)),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Jumlah Terjual'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tanggal'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Fungsi untuk memfilter data berdasarkan tanggal
+        function filterDataByDate() {
+            const startDate = form.startDate.value;
+            const endDate = form.endDate.value;
+            
+            if (!startDate || !endDate) {
+                return salesData;
+            }
+            
+            return salesData.filter(item => {
+                return item.tanggal >= startDate && item.tanggal <= endDate;
+            });
+        }
+        
+        // Fungsi untuk memformat tanggal menjadi YYYY-MM-DD
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        // Fungsi untuk memformat tampilan tanggal menjadi DD/MM/YYYY
+        function formatDisplayDate(dateString) {
+            const [year, month, day] = dateString.split('-');
+            return `${day}/${month}/${year}`;
+        }
+        
+        // Inisialisasi
+        let salesData = [];
+        
+        // Muat data saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDataFromSheets();
+        });
+    </script>
+</body>
+</html>
